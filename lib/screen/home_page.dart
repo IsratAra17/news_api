@@ -21,15 +21,17 @@ class _Home_pageState extends State<Home_page> {
   NewsModel ?newsModel;
 
 
-  fetchHomeData()async{
+
+ Future<NewsModel>fetchHomeData()async{
     var response=await http.get(Uri.parse(url));//api hit korlam "response" a raklam
      var data=jsonDecode((response.body));
      print("our response is ${data}");
 //model class a data pass kore dibo
      newsModel=NewsModel.fromJson(data);
-     setState(() {
-
-     });
+     return newsModel!;
+     // setState(() {
+     //
+     // });
   }
   @override
   void initState() {
@@ -50,7 +52,7 @@ class _Home_pageState extends State<Home_page> {
           width: double.infinity,
           child: ListView(
             children: [
-              FutureBuilder <NewsModel>(
+              FutureBuilder(
                 future: fetchHomeData(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
