@@ -1,31 +1,34 @@
 import 'dart:convert';
-
-import 'package:flutter/cupertino.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:news_api/model/news_model.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:news_api/provider/news_provider.dart';
+import 'package:news_api/screen/news_details.dart';
+import 'package:news_api/screen/search_page.dart';
+import 'package:news_api/screen/web_view_details.dart';
+import 'package:provider/provider.dart';
 
 
-class Home_page extends StatefulWidget {
-  const Home_page({Key? key}) : super(key: key);
-
+class HomePage extends StatefulWidget {
   @override
-  State<Home_page> createState() => _Home_pageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _Home_pageState extends State<Home_page> {
+class _HomePageState extends State<HomePage> {
+
   String sortBy="publishedAt";
 
   int pageNo=1;
-
   @override
   Widget build(BuildContext context) {
     var newsProvider = Provider.of<NewsProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: Text("news App"),
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],
+        actions: [IconButton(onPressed: () {
+          Navigator.of(context).push(MaterialPageRoute(builder: (context)=>SearchPage()));
+        }, icon: Icon(Icons.search))],
       ),
       body: Container(
           padding: EdgeInsets.all(12),
@@ -168,8 +171,21 @@ class _Home_pageState extends State<Home_page> {
                                               "${snapshot.data!.articles![index].title}",
                                               maxLines: 2,
                                             ),
-                                            Text(
-                                                "${snapshot.data!.articles![index].publishedAt}")
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                InkWell(
+                                                  onTap: (){
+                                                    Navigator.of(context).push(MaterialPageRoute(builder: (context)=>WebViewDetails(
+                                                      articles: snapshot.data!.articles![index],
+                                                    )));
+                                                  },
+                                                  child: Icon(Icons.ac_unit),
+                                                ),
+                                                Text(
+                                                    "${snapshot.data!.articles![index].publishedAt}"),
+                                              ],
+                                            )
                                           ],
                                         ))
                                   ],
