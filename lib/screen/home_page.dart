@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:news_api/model/news_model.dart';
@@ -14,34 +15,13 @@ class Home_page extends StatefulWidget {
 }
 
 class _Home_pageState extends State<Home_page> {
+  String sortBy="publishedAt";
 
-  String url="https://newsapi.org/v2/everything?q=bitcoin&sortBy=relevency&pageSize=5andpage=1&apiKey=0ca84d47b3184231ad3ab2c9c2cf033b";
+  int pageNo=1;
 
-  //create an obj
-  NewsModel ?newsModel;
-
-
-
- Future<NewsModel>fetchHomeData()async{
-    var response=await http.get(Uri.parse(url));//api hit korlam "response" a raklam
-     var data=jsonDecode((response.body));
-     print("our response is ${data}");
-//model class a data pass kore dibo
-     newsModel=NewsModel.fromJson(data);
-     return newsModel!;
-     // setState(() {
-     //
-     // });
-  }
-  @override
-  void initState() {
-    // TODO: implement initState
-
-    fetchHomeData();
-    super.initState();
-  }
   @override
   Widget build(BuildContext context) {
+    var newsProvider = Provider.of<NewsProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: Text("news App"),
@@ -52,8 +32,68 @@ class _Home_pageState extends State<Home_page> {
           width: double.infinity,
           child: ListView(
             children: [
-              FutureBuilder(
-                future: fetchHomeData(),
+              Container(
+                height: 45,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton(onPressed: (){
+                      if(pageNo>1){
+                        setState(() {
+                          pageNo-=1;
+                        });
+                      }
+                    }, child:Text("Prev")),
+                    ListView.builder(
+                      itemCount: 5,
+                      shrinkWrap: true,
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (context,index){
+                        return InkWell(
+                          onTap: (){
+                            setState(() {
+                              pageNo=index+1;
+                            });
+                          },
+                          child: Container(
+                            margin: EdgeInsets.only(right: 10),
+                            color:   pageNo==index+1? Colors.red :Colors.blue,
+                            padding: EdgeInsets.all(12),
+                            child: Text("${index+1}",style: TextStyle(color: Colors.white),),
+                          ),
+                        );
+                      },
+                    ),
+                    ElevatedButton(onPressed: (){
+                      if(pageNo<5){
+                        setState(() {
+                          pageNo+=1;
+                        });
+                      }
+                    }, child:Text("Next")),
+                  ],
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: DropdownButton(
+                  value: sortBy,
+                  items: [
+                    DropdownMenuItem(child: Text("publishedAt"),value: "publishedAt"),
+                    DropdownMenuItem(child: Text("popularity"),value:"popularity" ,),
+                    DropdownMenuItem(child: Text("relevancy"),value: "relevancy",),
+
+
+                  ],
+                  onChanged: (value){
+                    setState(() {
+                      sortBy=value!;
+                    });
+                  },
+                ),
+              ),
+              FutureBuilder<NewsModel>(
+                future: newsProvider.getNewsData(pageNo,sortBy),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(
@@ -69,58 +109,74 @@ class _Home_pageState extends State<Home_page> {
                     physics: NeverScrollableScrollPhysics(),
                     itemCount: snapshot.data!.articles!.length,
                     itemBuilder: (context, index) {
-                      return Container(
-                        color: Colors.white,
-                        height: 130,
-                        padding: const EdgeInsets.all(8.0),
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 60,width: 60,
-                              color: Colors.blueGrey,
-                            ),
-                            Positioned(
-                              right: 0,bottom: 0,
-                              child: Container(
-                                height: 50,width: 50,
+                      return InkWell(
+                        onTap: (){
+                          Navigator.of(context).push(MaterialPageRoute(builder: (context)=>NewsDetails(
+                            articles: snapshot.data!.articles![index],
+                          )));
+                        },
+                        child: Container(
+                          color: Colors.white,
+                          height: 130,
+                          padding: const EdgeInsets.all(8.0),
+                          child: Stack(
+                            children: [
+                              Container(
+                                height: 60,
+                                width: 60,
                                 color: Colors.blueGrey,
-                              ),),
-                            Container(
-                              color: Colors.white,
-                              padding: EdgeInsets.all(14),
-                              margin: EdgeInsets.all(14),
-                              child: Row(
-
-                                children: [
-                                  Expanded(
-                                    flex:3,
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(6),
-                                      child:CachedNetworkImage(
-                                        imageUrl: "${snapshot.data!.articles![index].urlToImage}",
-                                        placeholder: (context, url) => CircularProgressIndicator(),
-                                        errorWidget: (context, url, error) => Image.network("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOmYqa4Vpnd-FA25EGmYMiDSWOl9QV8UN1du_duZC9mQ&s"),
-                                      ),
-                                      //Image(image: NetworkImage("${snapshot.data!.articles![index].urlToImage}",))
-                                    ),
-                                  ),
-                                  SizedBox(width: 8,),
-                                  Expanded(
-                                      flex: 10,
-                                      child:Column(
-                                        children: [
-                                          Text(
-                                            "${snapshot.data!.articles![index].title}",maxLines: 2,),
-
-                                          Text(
-                                              "${snapshot.data!.articles![index].publishedAt}")
-                                        ],
-                                      )
-                                  )
-                                ],
                               ),
-                            )
-                          ],
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  height: 50,
+                                  width: 50,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
+                              Container(
+                                color: Colors.white,
+                                padding: EdgeInsets.all(14),
+                                margin: EdgeInsets.all(14),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: CachedNetworkImage(
+                                          imageUrl:
+                                          "${snapshot.data!.articles![index].urlToImage}",
+                                          placeholder: (context, url) =>
+                                              CircularProgressIndicator(),
+                                          errorWidget: (context, url, error) =>
+                                              Image.network(
+                                                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOmYqa4Vpnd-FA25EGmYMiDSWOl9QV8UN1du_duZC9mQ&s"),
+                                        ),
+                                        //Image(image: NetworkImage("${snapshot.data!.articles![index].urlToImage}",))
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 8,
+                                    ),
+                                    Expanded(
+                                        flex: 10,
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              "${snapshot.data!.articles![index].title}",
+                                              maxLines: 2,
+                                            ),
+                                            Text(
+                                                "${snapshot.data!.articles![index].publishedAt}")
+                                          ],
+                                        ))
+                                  ],
+                                ),
+                              )
+                            ],
+                          ),
                         ),
                       );
                     },
